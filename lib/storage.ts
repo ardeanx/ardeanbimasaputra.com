@@ -4,7 +4,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT = path.join(process.cwd(), "public", "uploads");
-const CAN_USE_BLOB = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const PRIVATE_ROOT = path.join(process.cwd(), "storage", "resources");
+const CAN_USE_BLOB = Boolean(process.env.VERCEL) && Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
 const EXT: Record<string, string> = {
   "image/png": "png",
@@ -18,21 +19,31 @@ export function extForMime(mime: string): string | null {
 }
 
 export async function put(data: Buffer, ext: string): Promise<{ url: string; key: string }> {
+  const key = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
+
   if (CAN_USE_BLOB) {
-    const key = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
     const blob = await putBlob(key, data, { access: "public" });
     return { url: blob.url, key: blob.pathname };
   }
 
+  if (process.env.VERCEL) {
+    throw new Error(
+      "Upload storage is not configured for Vercel. Set BLOB_READ_WRITE_TOKEN in environment variables.",
+    );
+  }
+
   await mkdir(ROOT, { recursive: true });
-  const key = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
   await writeFile(path.join(ROOT, key), data);
   return { url: `/uploads/${key}`, key };
 }
 
-const PRIVATE_ROOT = path.join(process.cwd(), "storage", "resources");
-
 export async function putPrivate(data: Buffer, ext: string): Promise<{ key: string }> {
+  if (process.env.VERCEL) {
+    throw new Error(
+      "Private resource storage is not configured for Vercel. Use a persistent blob or file store for private downloads.",
+    );
+  }
+
   await mkdir(PRIVATE_ROOT, { recursive: true });
   const suffix = ext ? `.${ext.replace(/[^a-z0-9]/gi, "").slice(0, 10)}` : "";
   const key = `${Date.now()}-${randomBytes(8).toString("hex")}${suffix}`;
