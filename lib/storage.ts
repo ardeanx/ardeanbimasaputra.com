@@ -1,6 +1,6 @@
-import { put as putBlob } from "@vercel/blob";
+import { del as delBlob, put as putBlob } from "@vercel/blob";
 import { randomBytes } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT = path.join(process.cwd(), "public", "uploads");
@@ -49,6 +49,25 @@ export async function putPrivate(data: Buffer, ext: string): Promise<{ key: stri
   const key = `${Date.now()}-${randomBytes(8).toString("hex")}${suffix}`;
   await writeFile(path.join(PRIVATE_ROOT, key), data);
   return { key };
+}
+
+export async function remove(key: string): Promise<void> {
+  if (CAN_USE_BLOB) {
+    await delBlob(key);
+    return;
+  }
+
+  if (process.env.VERCEL) {
+    throw new Error(
+      "Upload storage is not configured for Vercel. Set BLOB_READ_WRITE_TOKEN in environment variables.",
+    );
+  }
+
+  try {
+    await unlink(path.join(ROOT, path.basename(key)));
+  } catch {
+    // ignore missing files during hard-delete cleanup
+  }
 }
 
 export function privatePath(key: string): string {

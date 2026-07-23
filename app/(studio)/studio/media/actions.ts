@@ -1,12 +1,11 @@
 "use server";
 
-import { unlink } from "node:fs/promises";
-import path from "node:path";
-import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { mediaFile } from "@/db/schema";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { remove } from "@/lib/storage";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 type ActionResult = { ok: true } | { error: string };
 
@@ -21,10 +20,8 @@ export async function deleteMediaAction(id: string): Promise<ActionResult> {
   if (row.uploaderId !== session.user.id && role !== "admin") {
     return { error: "Tidak berhak menghapus berkas ini." };
   }
+  await remove(row.key);
   await db.delete(mediaFile).where(eq(mediaFile.id, id));
-  try {
-    await unlink(path.join(process.cwd(), "public", "uploads", path.basename(row.key)));
-  } catch {}
   revalidatePath("/studio/media");
   return { ok: true };
 }

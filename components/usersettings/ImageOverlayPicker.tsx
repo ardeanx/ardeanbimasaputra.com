@@ -1,5 +1,6 @@
 "use client";
 
+import ImageCropModal from "@/components/ui/ImageCropModal";
 import { Camera } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -27,11 +28,33 @@ export default function ImageOverlayPicker({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   function upload(file: File) {
     setProgress(0);
     const form = new FormData();
     form.append("file", file);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/uploads");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      setProgress(null);
+      if (xhr.status === 201) onChange(JSON.parse(xhr.responseText).url);
+      else toast.error(safeErr(xhr.responseText));
+    };
+    xhr.onerror = () => {
+      setProgress(null);
+      toast.error("Gagal mengunggah.");
+    };
+    xhr.send(form);
+  }
+
+  function uploadBlob(blob: Blob) {
+    setProgress(0);
+    const form = new FormData();
+    form.append("file", blob, pendingFile?.name ?? "cropped-image");
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/uploads");
     xhr.upload.onprogress = (e) => {
@@ -85,8 +108,24 @@ export default function ImageOverlayPicker({
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) upload(f);
+          if (f) {
+            if (f.type.startsWith("image/")) {
+              setPendingFile(f);
+            } else {
+              upload(f);
+            }
+          }
           e.target.value = "";
+        }}
+      />
+      <ImageCropModal
+        open={Boolean(pendingFile)}
+        file={pendingFile}
+        aspectRatio={shape === "circle" ? 1 : 16 / 9}
+        onClose={() => setPendingFile(null)}
+        onSave={(blob) => {
+          setPendingFile(null);
+          uploadBlob(blob);
         }}
       />
     </button>
