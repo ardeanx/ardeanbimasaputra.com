@@ -7,7 +7,7 @@ import { post } from "@/db/schema";
 import { db } from "@/lib/db";
 import { deletePost, moderatePost, savePost } from "@/lib/posts";
 import { revalidateContent } from "@/lib/revalidate";
-import { getSession, isAdminUser } from "@/lib/session";
+import { actorOf, getSession, isAdminUser } from "@/lib/session";
 import { getT } from "@/lib/i18n";
 import { postMeta, type PostMeta } from "@/lib/validators";
 

@@ -7,7 +7,7 @@ import {
   playlistsForPost,
   togglePlaylistItem,
 } from "@/lib/playlists";
-import { getSession } from "@/lib/session";
+import { actorOf, getSession } from "@/lib/session";
 import { getT } from "@/lib/i18n";
 
 export async function createPlaylistAction(title: string, postId?: string) {
