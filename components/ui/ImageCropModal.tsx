@@ -150,7 +150,7 @@ export default function ImageCropModal({ open, file, aspectRatio, onClose, onSav
   if (!open || !file) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[140] grid place-items-center bg-black/70 p-4">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
       <div className="relative w-full max-w-3xl rounded-2xl bg-yt-raised shadow-2xl">
         <button
           type="button"
