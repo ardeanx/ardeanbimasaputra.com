@@ -158,6 +158,7 @@ const AppearanceSection = forwardRef<SaveHandle, { appearance: Appearance }>(
           onChange={(v) => patch("authImage", v)}
           hint={t("settings.appearance.authImageHint")}
           fit="cover"
+          aspectRatio={3 / 4}
         />
 
         <Field label={t("settings.appearance.defaultTheme")}>

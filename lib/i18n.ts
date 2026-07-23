@@ -2,6 +2,9 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { cookies, headers } from "next/headers";
 import { cache } from "react";
+import { translation, language } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 import { getSettings } from "./settings";
 
 const DIR = path.join(process.cwd(), "locales");
@@ -12,7 +15,7 @@ export type Dict = Record<string, string>;
 
 const dictCache = new Map<string, Dict>();
 
-export async function listLocales(): Promise<string[]> {
+async function listJsonLocales(): Promise<string[]> {
   try {
     const files = await readdir(DIR);
     return files
@@ -20,8 +23,51 @@ export async function listLocales(): Promise<string[]> {
       .map((f) => f.slice(0, -5))
       .sort();
   } catch {
-    return [DEFAULT_LOCALE];
+    return [];
   }
+}
+
+async function readJsonDict(locale: string): Promise<Dict> {
+  const safe = locale.replace(/[^a-zA-Z-]/g, "");
+  try {
+    const raw = await readFile(path.join(DIR, `${safe}.json`), "utf8");
+    return JSON.parse(raw) as Dict;
+  } catch {
+    return {};
+  }
+}
+
+async function listDbLocales(): Promise<string[]> {
+  try {
+    const rows = await db
+      .select({ code: language.code })
+      .from(language)
+      .where(eq(language.isActive, true));
+    return rows.map((r) => r.code);
+  } catch {
+    return [];
+  }
+}
+
+async function readDbDict(locale: string): Promise<Dict> {
+  try {
+    const rows = await db
+      .select({ key: translation.key, value: translation.value })
+      .from(translation)
+      .where(eq(translation.locale, locale));
+    const out: Dict = {};
+    for (const r of rows) out[r.key] = r.value;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+export async function listLocales(): Promise<string[]> {
+  const [jsonLocales, dbLocales] = await Promise.all([listJsonLocales(), listDbLocales()]);
+  const merged = Array.from(new Set([...dbLocales, ...jsonLocales]));
+  if (merged.length === 0) return [DEFAULT_LOCALE];
+  return merged.sort();
 }
 
 export async function loadDict(locale: string): Promise<Dict> {
@@ -31,14 +77,10 @@ export async function loadDict(locale: string): Promise<Dict> {
     const hit = dictCache.get(safe);
     if (hit) return hit;
   }
-  try {
-    const raw = await readFile(path.join(DIR, `${safe}.json`), "utf8");
-    const parsed = JSON.parse(raw) as Dict;
-    if (useCache) dictCache.set(safe, parsed);
-    return parsed;
-  } catch {
-    return {};
-  }
+  const [jsonDict, dbDict] = await Promise.all([readJsonDict(safe), readDbDict(safe)]);
+  const merged = { ...jsonDict, ...dbDict };
+  if (useCache && Object.keys(merged).length > 0) dictCache.set(safe, merged);
+  return merged;
 }
 
 export function clearDictCache(): void {

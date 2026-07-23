@@ -1,8 +1,9 @@
 "use server";
 
-import { writeFile } from "node:fs/promises";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
+import { and, eq } from "drizzle-orm";
+import { language, translation } from "@/db/schema";
+import { db } from "@/lib/db";
 import { clearDictCache, listLocales, loadDict } from "@/lib/i18n";
 import { getSession } from "@/lib/session";
 import { translateTexts } from "@/lib/translate";
@@ -19,9 +20,9 @@ async function requireAdminSession(): Promise<string | null> {
   return null;
 }
 
-function localePath(code: string): string | null {
-  if (!CODE_RE.test(code)) return null;
-  return path.join(process.cwd(), "locales", `${code}.json`);
+function normalizeCode(code: string): string | null {
+  const lower = code.trim().toLowerCase();
+  return CODE_RE.test(lower) ? lower : null;
 }
 
 function cleanEntries(entries: Record<string, string>): Record<string, string> {
@@ -34,22 +35,40 @@ function cleanEntries(entries: Record<string, string>): Record<string, string> {
   return out;
 }
 
-async function writeLocale(file: string, dict: Record<string, string>): Promise<void> {
-  await writeFile(file, `${JSON.stringify(dict, null, 2)}\n`, "utf8");
-  clearDictCache();
-  revalidatePath("/studio/languages");
+async function upsertTranslationRows(locale: string, dict: Record<string, string>) {
+  const entries = Object.entries(dict);
+  if (entries.length === 0) return;
+  for (const [key, value] of entries) {
+    const existing = await db
+      .select({ key: translation.key })
+      .from(translation)
+      .where(and(eq(translation.locale, locale), eq(translation.key, key)))
+      .limit(1);
+    if (existing.length > 0) {
+      await db
+        .update(translation)
+        .set({ value, updatedAt: new Date() })
+        .where(and(eq(translation.locale, locale), eq(translation.key, key)));
+    } else {
+      await db.insert(translation).values({ locale, key, value });
+    }
+  }
 }
 
-export async function addLocaleAction(code: string): Promise<ActionResult> {
+export async function addLocaleAction(code: string, name?: string): Promise<ActionResult> {
   const denied = await requireAdminSession();
   if (denied) return { error: denied };
-  const lower = code.trim().toLowerCase();
-  const file = localePath(lower);
-  if (!file) return { error: "Kode locale tidak valid (contoh: fr, pt-br)." };
+  const lower = normalizeCode(code);
+  if (!lower) return { error: "Kode locale tidak valid (contoh: fr, pt-br)." };
   if ((await listLocales()).includes(lower)) {
     return { error: "Bahasa sudah ada." };
   }
-  await writeLocale(file, {});
+  await db
+    .insert(language)
+    .values({ code: lower, name: (name ?? lower).trim() || lower })
+    .onConflictDoNothing();
+  clearDictCache();
+  revalidatePath("/studio/languages");
   return { ok: true };
 }
 
@@ -59,10 +78,11 @@ export async function saveLocaleAction(
 ): Promise<ActionResult> {
   const denied = await requireAdminSession();
   if (denied) return { error: denied };
-  const lower = code.trim().toLowerCase();
-  const file = localePath(lower);
-  if (!file) return { error: "Kode locale tidak valid." };
-  await writeLocale(file, cleanEntries(entries));
+  const lower = normalizeCode(code);
+  if (!lower) return { error: "Kode locale tidak valid." };
+  await upsertTranslationRows(lower, cleanEntries(entries));
+  clearDictCache();
+  revalidatePath("/studio/languages");
   return { ok: true };
 }
 
@@ -72,9 +92,8 @@ export async function autoTranslateAction(
 ): Promise<{ ok: true; filled: number; dict: Record<string, string> } | { error: string }> {
   const denied = await requireAdminSession();
   if (denied) return { error: denied };
-  const lower = code.trim().toLowerCase();
-  const file = localePath(lower);
-  if (!file) return { error: "Kode locale tidak valid." };
+  const lower = normalizeCode(code);
+  if (!lower) return { error: "Kode locale tidak valid." };
   if (lower === "en") {
     return { error: "Bahasa default tidak bisa diterjemahkan otomatis." };
   }
@@ -100,6 +119,8 @@ export async function autoTranslateAction(
       }
     });
   }
-  await writeLocale(file, dict);
+  await upsertTranslationRows(lower, dict);
+  clearDictCache();
+  revalidatePath("/studio/languages");
   return { ok: true, filled, dict };
 }

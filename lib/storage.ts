@@ -5,7 +5,7 @@ import path from "node:path";
 
 const ROOT = path.join(process.cwd(), "public", "uploads");
 const PRIVATE_ROOT = path.join(process.cwd(), "storage", "resources");
-const CAN_USE_BLOB = Boolean(process.env.VERCEL) && Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const CAN_USE_BLOB = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
 const EXT: Record<string, string> = {
   "image/png": "png",
@@ -28,7 +28,7 @@ export async function put(data: Buffer, ext: string): Promise<{ url: string; key
 
   if (process.env.VERCEL) {
     throw new Error(
-      "Upload storage is not configured for Vercel. Set BLOB_READ_WRITE_TOKEN in environment variables.",
+      "Upload storage belum dikonfigurasi untuk Vercel. Set env BLOB_READ_WRITE_TOKEN di Project Settings → Storage, lalu hubungkan Blob store.",
     );
   }
 

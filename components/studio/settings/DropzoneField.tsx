@@ -4,6 +4,7 @@ import { useT } from "@/components/i18n/I18nProvider";
 import ImageCropModal from "@/components/ui/ImageCropModal";
 import { Crop, Pencil, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 function safeErr(body: string, fallback: string): string {
   try {
@@ -19,12 +20,16 @@ export default function DropzoneField({
   onChange,
   hint,
   fit = "contain",
+  aspectRatio,
+  skipCropFor,
 }: {
   label: string;
   value: string | null;
   onChange: (url: string | null) => void;
   hint?: string;
   fit?: "contain" | "cover";
+  aspectRatio?: number;
+  skipCropFor?: RegExp;
 }) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -32,6 +37,7 @@ export default function DropzoneField({
   const [error, setError] = useState<string | null>(null);
   const [drag, setDrag] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const ratio = aspectRatio ?? (fit === "cover" ? 16 / 9 : 1);
 
   function upload(file: File) {
     setError(null);
@@ -46,11 +52,17 @@ export default function DropzoneField({
     xhr.onload = () => {
       setProgress(null);
       if (xhr.status === 201) onChange(JSON.parse(xhr.responseText).url);
-      else setError(safeErr(xhr.responseText, t("settings.uploadFailed")));
+      else {
+        const msg = safeErr(xhr.responseText, t("settings.uploadFailed"));
+        setError(msg);
+        toast.error(msg);
+      }
     };
     xhr.onerror = () => {
       setProgress(null);
-      setError(t("settings.uploadFailed"));
+      const msg = t("settings.uploadFailed");
+      setError(msg);
+      toast.error(msg);
     };
     xhr.send(form);
   }
@@ -68,11 +80,17 @@ export default function DropzoneField({
     xhr.onload = () => {
       setProgress(null);
       if (xhr.status === 201) onChange(JSON.parse(xhr.responseText).url);
-      else setError(safeErr(xhr.responseText, t("settings.uploadFailed")));
+      else {
+        const msg = safeErr(xhr.responseText, t("settings.uploadFailed"));
+        setError(msg);
+        toast.error(msg);
+      }
     };
     xhr.onerror = () => {
       setProgress(null);
-      setError(t("settings.uploadFailed"));
+      const msg = t("settings.uploadFailed");
+      setError(msg);
+      toast.error(msg);
     };
     xhr.send(form);
   }
@@ -80,7 +98,7 @@ export default function DropzoneField({
   function pick(files: FileList | null) {
     const f = files?.[0];
     if (!f) return;
-    if (f.type.startsWith("image/")) {
+    if (f.type.startsWith("image/") && !skipCropFor?.test(f.type)) {
       setPendingFile(f);
       return;
     }
@@ -137,7 +155,7 @@ export default function DropzoneField({
         className={`relative w-full cursor-pointer overflow-hidden rounded-lg border border-dashed text-sm text-yt-text2 transition ${
           drag ? "border-yt-cta bg-yt-hover" : "border-yt-outline hover:bg-yt-hover"
         }`}
-        style={{ aspectRatio: fit === "cover" ? "16 / 9" : "1 / 1" }}
+        style={{ aspectRatio: String(ratio) }}
       >
         {value ? (
           <img
@@ -202,7 +220,7 @@ export default function DropzoneField({
       <ImageCropModal
         open={Boolean(pendingFile)}
         file={pendingFile}
-        aspectRatio={fit === "cover" ? 16 / 9 : 1}
+        aspectRatio={ratio}
         onClose={() => setPendingFile(null)}
         onSave={(blob) => {
           setPendingFile(null);

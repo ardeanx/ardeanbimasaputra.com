@@ -6,18 +6,29 @@ import { Camera } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+function serverErr(xhr: XMLHttpRequest): string {
+  try {
+    const parsed = JSON.parse(xhr.responseText) as { error?: string };
+    return parsed.error ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export default function ImageOverlayPicker({
   value,
   shape,
   onChange,
   className = "",
   fit = "cover",
+  aspectRatio,
 }: {
   value: string | null;
   shape: "circle" | "banner";
   onChange: (url: string) => void;
   className?: string;
   fit?: "cover" | "contain";
+  aspectRatio?: number;
 }) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +47,7 @@ export default function ImageOverlayPicker({
     xhr.onload = () => {
       setProgress(null);
       if (xhr.status === 201) onChange(JSON.parse(xhr.responseText).url);
-      else toast.error(t("usersettings.overlay.uploadFailed"));
+      else toast.error(serverErr(xhr));
     };
     xhr.onerror = () => {
       setProgress(null);
@@ -57,7 +68,7 @@ export default function ImageOverlayPicker({
     xhr.onload = () => {
       setProgress(null);
       if (xhr.status === 201) onChange(JSON.parse(xhr.responseText).url);
-      else toast.error(t("usersettings.overlay.uploadFailed"));
+      else toast.error(serverErr(xhr));
     };
     xhr.onerror = () => {
       setProgress(null);
@@ -67,6 +78,7 @@ export default function ImageOverlayPicker({
   }
 
   const busy = progress !== null;
+  const ratio = aspectRatio ?? (shape === "banner" ? 16 / 9 : 1);
   const rounded = shape === "circle" ? "rounded-full" : "rounded-2xl";
   const ariaLabel =
     shape === "circle"
@@ -121,7 +133,7 @@ export default function ImageOverlayPicker({
       <ImageCropModal
         open={Boolean(pendingFile)}
         file={pendingFile}
-        aspectRatio={shape === "circle" ? 1 : 16 / 9}
+        aspectRatio={shape === "circle" ? 1 : ratio}
         onClose={() => setPendingFile(null)}
         onSave={(blob) => {
           setPendingFile(null);

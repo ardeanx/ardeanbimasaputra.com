@@ -543,6 +543,27 @@ export const appSetting = pgTable("app_setting", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
+export const language = pgTable("language", {
+  code: text("code").primaryKey(),
+  name: text("name").notNull(),
+  isActive: boolean("isActive").notNull().default(true),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export const translation = pgTable(
+  "translation",
+  {
+    locale: text("locale")
+      .notNull()
+      .references(() => language.code, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.locale, t.key] })],
+);
+
 export const threadTopic = pgTable("thread_topic", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),

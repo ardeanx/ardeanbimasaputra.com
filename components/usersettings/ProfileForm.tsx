@@ -58,6 +58,7 @@ export default function ProfileForm({ initial }: { initial: Profile }) {
           value={value.banner}
           shape="banner"
           onChange={(url) => set("banner", url)}
+          aspectRatio={6.2 / 1}
           className="mt-3 aspect-[6.2/1] w-full bg-gradient-to-r from-[#065fd4] via-[#3ea6ff] to-[#065fd4]"
         />
         <div className="mt-4 flex items-center gap-4">

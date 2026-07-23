@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { genId } from "@/lib/id";
 import { getSession } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
-import { put } from "@/lib/storage";
+import { put, remove } from "@/lib/storage";
 
 export const ALLOWED: Record<string, string> = {
   "image/png": "png",
@@ -106,16 +106,30 @@ export async function POST(req: Request) {
     } catch {}
   }
 
-  const { url, key } = await put(buffer, ext);
+  let stored: { url: string; key: string };
+  try {
+    stored = await put(buffer, ext);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Gagal menyimpan berkas.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
   const id = genId();
-  await db.insert(mediaFile).values({
-    id,
-    uploaderId: session.user.id,
-    url,
-    key,
-    mime: sniffed,
-    size: buffer.length,
-  });
+  try {
+    await db.insert(mediaFile).values({
+      id,
+      uploaderId: session.user.id,
+      url: stored.url,
+      key: stored.key,
+      mime: sniffed,
+      size: buffer.length,
+    });
+  } catch (err) {
+    try {
+      await remove(stored.key);
+    } catch {}
+    const msg = err instanceof Error ? err.message : "Gagal mencatat metadata berkas.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
-  return NextResponse.json({ id, url }, { status: 201 });
+  return NextResponse.json({ id, url: stored.url }, { status: 201 });
 }
