@@ -2,9 +2,13 @@
   "name": "ardean-cms",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:deploy": "drizzle-kit migrate && next build",
     "start": "next start",
     "lint": "oxlint .",
     "format": "prettier . --write",
@@ -13,7 +17,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx --env-file=.env db/seed.ts"
+    "db:seed": "tsx --env-file=.env db/seed.ts",
+    "deploy:prepare": "drizzle-kit migrate"
   },
   "dependencies": {
     "@aejkatappaja/phantom-ui": "^1.4.0",
