@@ -1,8 +1,8 @@
+import * as schema from "@/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { admin, username } from "better-auth/plugins";
-import * as schema from "@/db/schema";
 import { db } from "./db";
 import { notifyAdmins } from "./notifications";
 import { readSettingsNoStore } from "./settings";
@@ -12,8 +12,25 @@ type SocialProviders = {
   github?: { clientId: string; clientSecret: string };
 };
 
+const betterAuthBaseURL =
+  process.env.BETTER_AUTH_URL?.replace(/\/$/, "") || "http://localhost:3000";
+const trustedOrigins = Array.from(
+  new Set([
+    betterAuthBaseURL,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://ardeanbimasaputra.com",
+    "https://www.ardeanbimasaputra.com",
+  ]),
+);
+
 function buildAuth(socialProviders: SocialProviders) {
   return betterAuth({
+    baseURL: betterAuthBaseURL,
+    trustedOrigins,
+    advanced: {
+      trustedProxyHeaders: true,
+    },
     database: drizzleAdapter(db, { provider: "pg", schema }),
     emailAndPassword: { enabled: true },
     socialProviders,
