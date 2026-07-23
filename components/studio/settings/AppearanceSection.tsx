@@ -149,6 +149,7 @@ const AppearanceSection = forwardRef<SaveHandle, { appearance: Appearance }>(
             onChange={(v) => patch("favicon", v)}
             hint={t("settings.appearance.faviconHint")}
             fit="contain"
+            skipCropFor={/^image\/(?:x-icon|vnd\.microsoft\.icon)$/}
           />
         </div>
 

@@ -1025,13 +1025,13 @@
     "semantic_hash": ""
   },
   "components/studio/settings/AppearanceSection.tsx": {
-    "mtime": 1784831575.833985,
-    "ast_hash": "da98253e6d8ab4b90f6ed7570b6259c1",
+    "mtime": 1784836558.5032725,
+    "ast_hash": "af141c286a75689ab0806aa8ff256c22",
     "semantic_hash": ""
   },
   "components/studio/settings/DropzoneField.tsx": {
-    "mtime": 1784831587.9085045,
-    "ast_hash": "49ab4603d54b8c6cda47912ea5d06370",
+    "mtime": 1784836546.7123518,
+    "ast_hash": "4d10c5fc39cb6e2143809c863e6379f8",
     "semantic_hash": ""
   },
   "components/studio/settings/IconPicker.tsx": {
@@ -1135,8 +1135,8 @@
     "semantic_hash": ""
   },
   "components/ui/ImageCropModal.tsx": {
-    "mtime": 1784813564.7601388,
-    "ast_hash": "6d51b4f815a050a5f0b0c5a7b73fe2ce",
+    "mtime": 1784836546.7123518,
+    "ast_hash": "608aa6dc728fd3fbf0265f1ba28d4318",
     "semantic_hash": ""
   },
   "components/ui/Modal.tsx": {

@@ -214,7 +214,10 @@ export default function DropzoneField({
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon"
         hidden
-        onChange={(e) => pick(e.target.files)}
+        onChange={(e) => {
+          pick(e.target.files);
+          e.target.value = "";
+        }}
       />
       {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
       <ImageCropModal
