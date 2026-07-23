@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { toast } from "sonner";
 import { saveSettingsAction } from "@/app/(studio)/studio/settings/actions";
 import { useT } from "@/components/i18n/I18nProvider";
 import type { AppSettings } from "@/lib/settings";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   DialogButton,
   Field,
@@ -88,6 +88,12 @@ const CARDS: Card[] = [
     descKey: "settings.integrations.googleOauth.desc",
     hintKey: "settings.integrations.restartHint",
     fields: [
+      {
+        key: "enabled",
+        labelKey: "settings.integrations.enabled",
+        kind: "toggle",
+        hintKey: "settings.integrations.enabledHint",
+      },
       { key: "clientId", label: "Client ID", kind: "text" },
       { key: "clientSecret", label: "Client Secret", kind: "secret" },
     ],
@@ -98,6 +104,12 @@ const CARDS: Card[] = [
     descKey: "settings.integrations.githubOauth.desc",
     hintKey: "settings.integrations.restartHint",
     fields: [
+      {
+        key: "enabled",
+        labelKey: "settings.integrations.enabled",
+        kind: "toggle",
+        hintKey: "settings.integrations.enabledHint",
+      },
       { key: "clientId", label: "Client ID", kind: "text" },
       { key: "clientSecret", label: "Client Secret", kind: "secret" },
     ],

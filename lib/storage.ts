@@ -1,8 +1,10 @@
+import { put as putBlob } from "@vercel/blob";
 import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT = path.join(process.cwd(), "public", "uploads");
+const CAN_USE_BLOB = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
 const EXT: Record<string, string> = {
   "image/png": "png",
@@ -16,6 +18,12 @@ export function extForMime(mime: string): string | null {
 }
 
 export async function put(data: Buffer, ext: string): Promise<{ url: string; key: string }> {
+  if (CAN_USE_BLOB) {
+    const key = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
+    const blob = await putBlob(key, data, { access: "public" });
+    return { url: blob.url, key: blob.pathname };
+  }
+
   await mkdir(ROOT, { recursive: true });
   const key = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
   await writeFile(path.join(ROOT, key), data);
