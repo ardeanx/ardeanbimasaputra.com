@@ -1,7 +1,7 @@
+import { appSetting } from "@/db/schema";
 import { type } from "arktype";
 import { eq } from "drizzle-orm";
 import { cache } from "react";
-import { appSetting } from "@/db/schema";
 import { db } from "./db";
 import { cacheGet, cacheSet, redis } from "./redis";
 
@@ -406,6 +406,10 @@ async function readDb(): Promise<AppSettings> {
 }
 
 async function loadSettings(): Promise<AppSettings> {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return DEFAULT_SETTINGS;
+  }
+
   const cached = await cacheGet(CACHE_KEY);
   if (cached) {
     try {
@@ -413,11 +417,17 @@ async function loadSettings(): Promise<AppSettings> {
       if (merged.system.enableCaching) return merged;
     } catch {}
   }
-  const merged = await readDb();
-  if (merged.system.enableCaching) {
-    await cacheSet(CACHE_KEY, JSON.stringify(merged), 60);
+
+  try {
+    const merged = await readDb();
+    if (merged.system.enableCaching) {
+      await cacheSet(CACHE_KEY, JSON.stringify(merged), 60);
+    }
+    return merged;
+  } catch (error) {
+    console.warn("Failed to load settings from database, falling back to DEFAULT_SETTINGS.", error);
+    return DEFAULT_SETTINGS;
   }
-  return merged;
 }
 
 export const getSettings = cache(loadSettings);
