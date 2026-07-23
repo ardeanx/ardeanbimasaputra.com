@@ -17,11 +17,13 @@ export default function ImageOverlayPicker({
   shape,
   onChange,
   className = "",
+  fit = "cover",
 }: {
   value: string | null;
   shape: "circle" | "banner";
   onChange: (url: string) => void;
   className?: string;
+  fit?: "cover" | "contain";
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -59,7 +61,11 @@ export default function ImageOverlayPicker({
       className={`group relative block overflow-hidden ${rounded} ${className}`}
     >
       {value ? (
-        <img src={value} alt="" className="h-full w-full object-cover" />
+        <img
+          src={value}
+          alt=""
+          className={`h-full w-full ${fit === "cover" ? "object-cover" : "object-contain"}`}
+        />
       ) : (
         <span className="block h-full w-full" />
       )}

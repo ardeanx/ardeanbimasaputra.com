@@ -1,12 +1,12 @@
-import { toNextJsHandler } from "better-auth/next-js";
-import { eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
 import { user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getT } from "@/lib/i18n";
 import { cacheGet, redis } from "@/lib/redis";
 import { getSettings } from "@/lib/settings";
+import { toNextJsHandler } from "better-auth/next-js";
+import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 const handler = toNextJsHandler(auth);
 
@@ -51,6 +51,7 @@ export async function POST(req: Request) {
       .catch(() => null)) as {
       password?: string;
       turnstileToken?: string;
+      provider?: string;
     } | null;
     if (body?.password && body.password.length < s.security.minPasswordLength) {
       return NextResponse.json(
@@ -60,7 +61,8 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    if (s.integrations.turnstile.enabled) {
+    const isSocialRequest = Boolean(body?.provider);
+    if (!isSocialRequest && s.integrations.turnstile.enabled) {
       const ok = await verifyTurnstile(
         body?.turnstileToken,
         s.integrations.turnstile.secretKey,
@@ -79,6 +81,7 @@ export async function POST(req: Request) {
       .catch(() => null)) as {
       email?: string;
       turnstileToken?: string;
+      provider?: string;
     } | null;
     const email = (body?.email ?? "").toLowerCase();
     const who = email || ip;
@@ -100,7 +103,8 @@ export async function POST(req: Request) {
         { status: 429 },
       );
     }
-    if (s.integrations.turnstile.enabled) {
+    const isSocialRequest = Boolean(body?.provider);
+    if (!isSocialRequest && s.integrations.turnstile.enabled) {
       const ok = await verifyTurnstile(
         body?.turnstileToken,
         s.integrations.turnstile.secretKey,

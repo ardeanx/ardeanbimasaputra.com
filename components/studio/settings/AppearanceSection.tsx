@@ -1,13 +1,13 @@
 "use client";
 
+import { saveSettingsAction } from "@/app/(studio)/studio/settings/actions";
+import { useT } from "@/components/i18n/I18nProvider";
+import Select from "@/components/ui/Select";
+import type { AppSettings } from "@/lib/settings";
 import { Check } from "lucide-react";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import { toast } from "sonner";
-import { saveSettingsAction } from "@/app/(studio)/studio/settings/actions";
-import { useT } from "@/components/i18n/I18nProvider";
-import type { AppSettings } from "@/lib/settings";
-import Select from "@/components/ui/Select";
 import DropzoneField from "./DropzoneField";
 import { Field, GroupTitle, Row, type SaveHandle, Toggle, inputCls } from "./forms";
 
@@ -141,12 +141,14 @@ const AppearanceSection = forwardRef<SaveHandle, { appearance: Appearance }>(
             value={s.logo}
             onChange={(v) => patch("logo", v)}
             hint={t("settings.appearance.logoHint")}
+            fit="contain"
           />
           <DropzoneField
             label={t("settings.appearance.favicon")}
             value={s.favicon}
             onChange={(v) => patch("favicon", v)}
             hint={t("settings.appearance.faviconHint")}
+            fit="contain"
           />
         </div>
 
@@ -155,6 +157,7 @@ const AppearanceSection = forwardRef<SaveHandle, { appearance: Appearance }>(
           value={s.authImage}
           onChange={(v) => patch("authImage", v)}
           hint={t("settings.appearance.authImageHint")}
+          fit="cover"
         />
 
         <Field label={t("settings.appearance.defaultTheme")}>

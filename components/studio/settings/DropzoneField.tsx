@@ -1,8 +1,8 @@
 "use client";
 
+import { useT } from "@/components/i18n/I18nProvider";
 import { X } from "lucide-react";
 import { useRef, useState } from "react";
-import { useT } from "@/components/i18n/I18nProvider";
 
 function safeErr(body: string, fallback: string): string {
   try {
@@ -17,11 +17,13 @@ export default function DropzoneField({
   value,
   onChange,
   hint,
+  fit = "contain",
 }: {
   label: string;
   value: string | null;
   onChange: (url: string | null) => void;
   hint?: string;
+  fit?: "contain" | "cover";
 }) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,7 +87,11 @@ export default function DropzoneField({
         }`}
       >
         {value ? (
-          <img src={value} alt="" className="h-full w-full object-contain p-2" />
+          <img
+            src={value}
+            alt=""
+            className={`h-full w-full p-2 ${fit === "cover" ? "object-cover" : "object-contain"}`}
+          />
         ) : (
           <span className="px-3 text-center text-xs">{t("settings.dropzoneHint")}</span>
         )}

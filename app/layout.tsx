@@ -7,6 +7,8 @@ import { getLocale } from "@/lib/i18n";
 import { baseUrl, buildSiteJsonLd } from "@/lib/seo";
 import { getSettings } from "@/lib/settings";
 import "@aejkatappaja/phantom-ui/ssr.css";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "sonner";
@@ -105,6 +107,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <Toaster position="bottom-right" richColors theme="system" />
           <DialogHost />
           <ImageZoomHost />
+          <Analytics />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
