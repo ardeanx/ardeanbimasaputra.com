@@ -57,11 +57,16 @@ export default function SettingsModal({
   }
 
   async function save() {
-    const hs = Object.values(handles.current).filter((h): h is SaveHandle => !!h);
+    const all = Object.values(handles.current).filter((h): h is SaveHandle => !!h);
+    const activeHandle = handles.current[active];
+    const hs = activeHandle
+      ? [...all.filter((h) => h !== activeHandle), activeHandle]
+      : all;
     if (hs.length === 0) return;
     setSaving(true);
     try {
-      const results = await Promise.all(hs.map((h) => h.save()));
+      const results: boolean[] = [];
+      for (const h of hs) results.push(await h.save());
       if (results.every(Boolean)) toast.success(t("settings.saveSuccess"));
     } finally {
       setSaving(false);
