@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/i18n/I18nProvider";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { changePasswordAction } from "@/app/(shell)/settings/actions";
@@ -8,6 +9,7 @@ const INPUT_CLS =
   "mt-1 h-10 w-full rounded-lg border border-yt-outline bg-transparent px-3 text-sm outline-none focus:border-yt-cta";
 
 export default function PasswordForm() {
+  const t = useT();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -16,15 +18,15 @@ export default function PasswordForm() {
 
   function submit() {
     if (!current) {
-      toast.error("Password lama wajib diisi.");
+      toast.error(t("usersettings.password.currentRequired"));
       return;
     }
     if (next.length < 8) {
-      toast.error("Password baru minimal 8 karakter.");
+      toast.error(t("usersettings.password.tooShort"));
       return;
     }
     if (next !== confirm) {
-      toast.error("Konfirmasi password tidak cocok.");
+      toast.error(t("usersettings.password.mismatch"));
       return;
     }
     startTransition(async () => {
@@ -35,7 +37,7 @@ export default function PasswordForm() {
       if ("error" in res) {
         toast.error(res.error);
       } else {
-        toast.success("Password berhasil diganti. Sesi lain telah diakhiri.");
+        toast.success(t("usersettings.password.changed"));
         setCurrent("");
         setNext("");
         setConfirm("");
@@ -46,7 +48,7 @@ export default function PasswordForm() {
   return (
     <div className="mt-3 max-w-md space-y-3">
       <label className="block text-sm">
-        <span className="text-yt-text2">Password lama</span>
+        <span className="text-yt-text2">{t("usersettings.password.current")}</span>
         <input
           type="password"
           value={current}
@@ -56,7 +58,7 @@ export default function PasswordForm() {
         />
       </label>
       <label className="block text-sm">
-        <span className="text-yt-text2">Password baru</span>
+        <span className="text-yt-text2">{t("usersettings.password.new")}</span>
         <input
           type="password"
           value={next}
@@ -66,7 +68,7 @@ export default function PasswordForm() {
         />
       </label>
       <label className="block text-sm">
-        <span className="text-yt-text2">Konfirmasi password baru</span>
+        <span className="text-yt-text2">{t("usersettings.password.confirm")}</span>
         <input
           type="password"
           value={confirm}
@@ -82,7 +84,7 @@ export default function PasswordForm() {
           disabled={!dirty || pending}
           className="h-10 rounded-full bg-yt-cta px-5 text-sm font-medium text-white disabled:opacity-50"
         >
-          {pending ? "Menyimpan..." : "Simpan"}
+          {pending ? t("usersettings.saving") : t("usersettings.save")}
         </button>
       </div>
     </div>

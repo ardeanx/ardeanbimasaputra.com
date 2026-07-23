@@ -3,11 +3,13 @@ import MediaLibrary from "@/components/studio/media/MediaLibrary";
 import { mediaFile, user } from "@/db/schema";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/session";
+import { getT } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export default async function StudioMedia() {
   const session = await requireSession();
+  const t = await getT();
   const role = (session.user as { role?: string | null }).role ?? null;
   const isAdmin = role === "admin";
 
@@ -35,7 +37,7 @@ export default async function StudioMedia() {
     <div className="mx-auto max-w-6xl px-4 py-6">
       <h1 className="mb-1 text-xl font-semibold text-yt-text">Media</h1>
       <p className="mb-6 text-sm text-yt-text2">
-        {isAdmin ? "Semua berkas yang diunggah ke situs ini." : "Berkas yang Anda unggah."}
+        {isAdmin ? t("studio.media.allUploaded") : t("studio.media.yourUploaded")}
       </p>
       <MediaLibrary items={items} />
     </div>

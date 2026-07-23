@@ -2,7 +2,7 @@
 
 import { useT } from "@/components/i18n/I18nProvider";
 import ImageCropModal from "@/components/ui/ImageCropModal";
-import { X } from "lucide-react";
+import { Crop, Pencil, X } from "lucide-react";
 import { useRef, useState } from "react";
 
 function safeErr(body: string, fallback: string): string {
@@ -87,6 +87,29 @@ export default function DropzoneField({
     upload(f);
   }
 
+  async function recropExisting() {
+    if (!value) return;
+    try {
+      const res = await fetch(value, { cache: "no-store" });
+      const buf = await res.blob();
+      const ext = value.split(".").pop()?.toLowerCase() ?? "png";
+      const type =
+        ext === "png"
+          ? "image/png"
+          : ext === "jpg" || ext === "jpeg"
+            ? "image/jpeg"
+            : ext === "webp"
+              ? "image/webp"
+              : ext === "gif"
+                ? "image/gif"
+                : "image/png";
+      const file = new File([buf], `edit-${Date.now()}.${ext}`, { type });
+      setPendingFile(file);
+    } catch {
+      setError(t("settings.uploadFailed"));
+    }
+  }
+
   return (
     <div className="py-3">
       <p className="mb-1.5 text-sm font-medium">{label}</p>
@@ -111,31 +134,55 @@ export default function DropzoneField({
           setDrag(false);
           pick(e.dataTransfer.files);
         }}
-        className={`relative grid h-28 w-full cursor-pointer place-items-center overflow-hidden rounded-lg border border-dashed text-sm text-yt-text2 transition ${
+        className={`relative w-full cursor-pointer overflow-hidden rounded-lg border border-dashed text-sm text-yt-text2 transition ${
           drag ? "border-yt-cta bg-yt-hover" : "border-yt-outline hover:bg-yt-hover"
         }`}
+        style={{ aspectRatio: fit === "cover" ? "16 / 9" : "1 / 1" }}
       >
         {value ? (
           <img
             src={value}
             alt=""
-            className={`h-full w-full p-2 ${fit === "cover" ? "object-cover" : "object-contain"}`}
+            className={`absolute inset-0 h-full w-full ${
+              fit === "cover" ? "object-cover" : "object-contain p-2"
+            }`}
           />
         ) : (
-          <span className="px-3 text-center text-xs">{t("settings.dropzoneHint")}</span>
+          <span className="absolute inset-0 grid place-items-center px-3 text-center text-xs">
+            {t("settings.dropzoneHint")}
+          </span>
         )}
         {value && progress === null && (
-          <button
-            type="button"
-            aria-label={t("settings.removeLabel", { label })}
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange(null);
-            }}
-            className="absolute top-1.5 right-1.5 rounded-full bg-black/60 p-1 text-white transition hover:bg-black/80"
-          >
-            <X size={14} />
-          </button>
+          <div className="absolute top-1.5 right-1.5 flex gap-1">
+            <button
+              type="button"
+              aria-label={t("settings.recropLabel")}
+              onClick={(e) => {
+                e.stopPropagation();
+                recropExisting();
+              }}
+              className="grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+            >
+              <Crop size={13} />
+            </button>
+            <button
+              type="button"
+              aria-label={t("settings.removeLabel", { label })}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(null);
+              }}
+              className="grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )}
+        {value && progress === null && (
+          <span className="pointer-events-none absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-medium text-white opacity-90">
+            <Pencil size={10} />
+            {t("settings.editHint")}
+          </span>
         )}
         {progress !== null && (
           <div className="absolute inset-0 grid place-items-center bg-yt-base/70">

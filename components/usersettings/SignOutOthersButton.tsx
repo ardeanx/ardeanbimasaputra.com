@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/i18n/I18nProvider";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -7,14 +8,15 @@ import { signOutOtherSessionsAction } from "@/app/(shell)/settings/actions";
 import { askConfirm } from "@/components/ui/dialog";
 
 export default function SignOutOthersButton() {
+  const t = useT();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   async function run() {
     const ok = await askConfirm({
-      title: "Keluar dari sesi lain?",
-      body: "Semua sesi selain sesi ini akan diakhiri.",
-      confirmLabel: "Keluar",
+      title: t("usersettings.signOutOthersTitle"),
+      body: t("usersettings.signOutOthersBody"),
+      confirmLabel: t("usersettings.signOutOthersConfirm"),
       danger: true,
     });
     if (!ok) return;
@@ -23,7 +25,7 @@ export default function SignOutOthersButton() {
       if ("error" in res) {
         toast.error(res.error);
       } else {
-        toast.success("Sesi lain telah diakhiri.");
+        toast.success(t("usersettings.signOutOthersDone"));
         router.refresh();
       }
     });
@@ -36,7 +38,7 @@ export default function SignOutOthersButton() {
       disabled={pending}
       className="h-9 rounded-full border border-yt-outline px-4 text-sm hover:bg-yt-hover disabled:opacity-50"
     >
-      {pending ? "Memproses..." : "Keluar dari sesi lain"}
+      {pending ? t("usersettings.processing") : t("usersettings.signOutOthers")}
     </button>
   );
 }

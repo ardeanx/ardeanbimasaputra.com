@@ -10,7 +10,7 @@ import {
   upsertTranslation,
 } from "@/lib/content-translation";
 import { db } from "@/lib/db";
-import { DEFAULT_LOCALE, listLocales } from "@/lib/i18n";
+import { DEFAULT_LOCALE, getT, listLocales } from "@/lib/i18n";
 import { revalidateContent } from "@/lib/revalidate";
 import { getSession } from "@/lib/session";
 
@@ -25,13 +25,14 @@ export type TranslationInfo = {
 type PostRow = typeof post.$inferSelect;
 
 async function guard(postId: string): Promise<{ post: PostRow } | { error: string }> {
+  const t = await getT();
   const session = await getSession();
-  if (!session) return { error: "Sesi berakhir. Silakan masuk lagi." };
+  if (!session) return { error: t("msg.sessionExpired") };
   const p = await db.query.post.findFirst({ where: eq(post.id, postId) });
-  if (!p) return { error: "Konten tidak ditemukan." };
+  if (!p) return { error: t("msg.contentNotFound") };
   const role = (session.user as { role?: string | null }).role;
   if (p.authorId !== session.user.id && role !== "admin") {
-    return { error: "Kamu tidak punya akses ke konten ini." };
+    return { error: t("msg.notAuthorized") };
   }
   return { post: p };
 }
@@ -63,7 +64,7 @@ export async function autoTranslateAction(
 ): Promise<{ ok: true } | { error: string }> {
   const g = await guard(postId);
   if ("error" in g) return g;
-  if (!(await validLocale(locale))) return { error: "Bahasa tidak dikenal." };
+  if (!(await validLocale(locale))) return { error: (await getT())("msg.unknownLanguage") };
   const res = await autoTranslatePost(g.post, locale);
   if ("error" in res) return { error: res.error };
   revalidateContent();
@@ -78,9 +79,9 @@ export async function editTranslationAction(
 ): Promise<{ ok: true } | { error: string }> {
   const g = await guard(postId);
   if ("error" in g) return g;
-  if (!(await validLocale(locale))) return { error: "Bahasa tidak dikenal." };
+  if (!(await validLocale(locale))) return { error: (await getT())("msg.unknownLanguage") };
   const cleanTitle = title.trim();
-  if (!cleanTitle) return { error: "Judul terjemahan wajib diisi." };
+  if (!cleanTitle) return { error: (await getT())("msg.translationTitleRequired") };
   const existing = await getTranslation(postId, locale);
   await upsertTranslation({
     postId,

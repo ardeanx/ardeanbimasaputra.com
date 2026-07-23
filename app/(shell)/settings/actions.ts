@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { type NotifPrefs, saveNotifPrefs } from "@/lib/notification-prefs";
 import { getSession } from "@/lib/session";
+import { getT } from "@/lib/i18n";
 
 type Result = { ok: true } | { error: string };
 
@@ -16,8 +17,8 @@ export async function changePasswordAction(input: {
   newPassword: string;
 }): Promise<Result> {
   const session = await getSession();
-  if (!session) return { error: "Harus masuk." };
-  if (input.newPassword.length < 8) return { error: "Password baru minimal 8 karakter." };
+  if (!session) return { error: (await getT())("msg.mustSignIn") };
+  if (input.newPassword.length < 8) return { error: (await getT())("msg.newPasswordMin") };
   try {
     await auth.api.changePassword({
       body: {
@@ -30,15 +31,15 @@ export async function changePasswordAction(input: {
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
-    if (/invalid password|incorrect/i.test(msg)) return { error: "Password lama salah." };
-    if (/too short|at least/i.test(msg)) return { error: "Password baru terlalu pendek." };
-    return { error: "Gagal mengganti password." };
+    if (/invalid password|incorrect/i.test(msg)) return { error: (await getT())("msg.wrongOldPassword") };
+    if (/too short|at least/i.test(msg)) return { error: (await getT())("msg.passwordTooShort") };
+    return { error: (await getT())("msg.passwordChangeFailed") };
   }
 }
 
 export async function signOutOtherSessionsAction(): Promise<Result> {
   const session = await getSession();
-  if (!session) return { error: "Harus masuk." };
+  if (!session) return { error: (await getT())("msg.mustSignIn") };
   await db
     .delete(sessionTable)
     .where(
@@ -56,20 +57,21 @@ export async function updateProfileAction(input: {
   banner: string | null;
 }): Promise<Result> {
   const session = await getSession();
-  if (!session) return { error: "Harus masuk." };
+  const tr = await getT();
+  if (!session) return { error: tr("msg.mustSignIn") };
   const name = input.name.trim();
-  if (!name) return { error: "Nama wajib diisi." };
+  if (!name) return { error: tr("msg.nameRequired") };
   const display = input.username.trim();
   const uname = display.toLowerCase();
   if (!/^[a-z0-9_.]{3,30}$/.test(uname))
     return {
-      error: "Username 3-30 karakter: huruf, angka, titik, atau garis bawah.",
+      error: tr("msg.usernameRequired"),
     };
   const taken = await db.query.user.findFirst({
     where: (t, { and: andW, eq: eqW, ne: neW }) =>
       andW(eqW(t.username, uname), neW(t.id, session.user.id)),
   });
-  if (taken) return { error: "Username sudah dipakai." };
+  if (taken) return { error: tr("msg.usernameTaken") };
   try {
     await db
       .update(userTable)
@@ -84,7 +86,7 @@ export async function updateProfileAction(input: {
       })
       .where(eq(userTable.id, session.user.id));
   } catch {
-    return { error: "Username sudah dipakai." };
+    return { error: tr("msg.usernameTaken") };
   }
   revalidatePath("/settings/profile");
   revalidatePath(`/@${uname}`);
@@ -93,7 +95,7 @@ export async function updateProfileAction(input: {
 
 export async function saveNotifPrefsAction(prefs: NotifPrefs): Promise<Result> {
   const session = await getSession();
-  if (!session) return { error: "Harus masuk." };
+  if (!session) return { error: (await getT())("msg.mustSignIn") };
   await saveNotifPrefs(session.user.id, {
     comments: !!prefs.comments,
     replies: !!prefs.replies,
@@ -105,8 +107,8 @@ export async function saveNotifPrefsAction(prefs: NotifPrefs): Promise<Result> {
 
 export async function setLangAction(lang: string): Promise<Result> {
   const session = await getSession();
-  if (!session) return { error: "Harus masuk." };
-  if (lang !== "id" && lang !== "en") return { error: "Bahasa tidak dikenal." };
+  if (!session) return { error: (await getT())("msg.mustSignIn") };
+  if (lang !== "id" && lang !== "en") return { error: (await getT())("msg.unknownLanguage") };
   const store = await cookies();
   store.set("lang", lang, {
     httpOnly: false,

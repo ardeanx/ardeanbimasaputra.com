@@ -12,46 +12,38 @@ type Props = {
   onSave: (blob: Blob) => void;
 };
 
-function clamp(v: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, v));
-}
+type Box = { boxW: number; boxH: number; cx: number; cy: number };
 
-function getCropRegion(
-  image: HTMLImageElement,
+function getBox(
+  naturalWidth: number,
+  naturalHeight: number,
   aspectRatio: number,
   zoom: number,
   panX: number,
   panY: number,
-) {
-  const naturalWidth = image.naturalWidth || image.width;
-  const naturalHeight = image.naturalHeight || image.height;
+): Box {
   const imgAspect = naturalWidth / naturalHeight;
-
-  let cropWidth = naturalWidth;
-  let cropHeight = naturalHeight;
-
-  if (imgAspect > aspectRatio) {
-    cropHeight = naturalHeight;
-    cropWidth = cropHeight * aspectRatio;
+  let baseW: number;
+  let baseH: number;
+  if (imgAspect >= aspectRatio) {
+    baseH = naturalHeight;
+    baseW = baseH * aspectRatio;
   } else {
-    cropWidth = naturalWidth;
-    cropHeight = cropWidth / aspectRatio;
+    baseW = naturalWidth;
+    baseH = baseW / aspectRatio;
   }
-
-  const visibleWidth = Math.max(1, cropWidth / Math.max(zoom, 0.8));
-  const visibleHeight = Math.max(1, cropHeight / Math.max(zoom, 0.8));
-  const maxSX = Math.max(0, naturalWidth - visibleWidth);
-  const maxSY = Math.max(0, naturalHeight - visibleHeight);
-
-  const sx = clamp((naturalWidth - visibleWidth) / 2 + panX * maxSX * 0.8, 0, maxSX);
-  const sy = clamp((naturalHeight - visibleHeight) / 2 + panY * maxSY * 0.8, 0, maxSY);
-
-  return {
-    sx,
-    sy,
-    sw: visibleWidth,
-    sh: visibleHeight,
-  };
+  const z = Math.max(zoom, 1);
+  const boxW = Math.max(1, baseW / z);
+  const boxH = Math.max(1, baseH / z);
+  const minCx = boxW / 2;
+  const maxCx = Math.max(minCx, naturalWidth - boxW / 2);
+  const minCy = boxH / 2;
+  const maxCy = Math.max(minCy, naturalHeight - boxH / 2);
+  const tx = (panX + 1) / 2;
+  const ty = (panY + 1) / 2;
+  const cx = minCx + tx * (maxCx - minCx);
+  const cy = minCy + ty * (maxCy - minCy);
+  return { boxW, boxH, cx, cy };
 }
 
 export default function ImageCropModal({ open, file, aspectRatio, onClose, onSave }: Props) {
@@ -63,7 +55,18 @@ export default function ImageCropModal({ open, file, aspectRatio, onClose, onSav
   const [panY, setPanY] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewportW, setViewportW] = useState(0);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!el) return;
+    const update = () => setViewportW(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open]);
 
   useEffect(() => {
     if (!open || !file) return;
@@ -93,15 +96,20 @@ export default function ImageCropModal({ open, file, aspectRatio, onClose, onSav
     img.src = src;
   }, [src]);
 
+  const box =
+    image && image.naturalWidth
+      ? getBox(image.naturalWidth, image.naturalHeight, aspectRatio, zoom, panX, panY)
+      : null;
+
   async function save() {
-    if (!image || !file) return;
+    if (!image || !file || !box) return;
     setSaving(true);
     setError(null);
 
     try {
-      const canvas = document.createElement("canvas");
       const width = 1600;
       const height = Math.max(1, Math.round(width / aspectRatio));
+      const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
 
@@ -111,23 +119,14 @@ export default function ImageCropModal({ open, file, aspectRatio, onClose, onSav
         return;
       }
 
-      const crop = getCropRegion(image, aspectRatio, zoom, panX, panY);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, width, height);
+      const outScale = width / box.boxW;
+      ctx.save();
       ctx.translate(width / 2, height / 2);
       ctx.rotate((rotation * Math.PI) / 180);
-      ctx.drawImage(
-        image,
-        crop.sx,
-        crop.sy,
-        crop.sw,
-        crop.sh,
-        -width / 2,
-        -height / 2,
-        width,
-        height,
-      );
-      ctx.resetTransform();
+      ctx.scale(outScale, outScale);
+      ctx.translate(-box.cx, -box.cy);
+      ctx.drawImage(image, 0, 0);
+      ctx.restore();
 
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(resolve, file.type || "image/png", 0.92);
@@ -148,6 +147,12 @@ export default function ImageCropModal({ open, file, aspectRatio, onClose, onSav
   }
 
   if (!open || !file) return null;
+
+  const viewportH = viewportW > 0 ? viewportW / aspectRatio : 0;
+  const previewTransform =
+    box && viewportW > 0
+      ? `translate(${viewportW / 2}px, ${viewportH / 2}px) rotate(${rotation}deg) scale(${viewportW / box.boxW}) translate(${-box.cx}px, ${-box.cy}px)`
+      : undefined;
 
   return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
@@ -171,14 +176,16 @@ export default function ImageCropModal({ open, file, aspectRatio, onClose, onSav
               className="relative overflow-hidden rounded-xl border border-yt-outline bg-yt-base"
               style={{ aspectRatio: `${aspectRatio}` }}
             >
-              {src && image && (
+              {src && image && box && previewTransform && (
                 <img
                   src={src}
                   alt="preview"
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className="absolute left-0 top-0 max-h-none max-w-none select-none"
                   style={{
-                    transform: `translate(${panX * 60}px, ${panY * 60}px) scale(${zoom}) rotate(${rotation}deg)`,
-                    transformOrigin: "center center",
+                    width: image.naturalWidth,
+                    height: image.naturalHeight,
+                    transform: previewTransform,
+                    transformOrigin: "0 0",
                   }}
                 />
               )}

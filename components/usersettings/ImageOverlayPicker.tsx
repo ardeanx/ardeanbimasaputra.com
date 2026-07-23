@@ -1,17 +1,10 @@
 "use client";
 
+import { useT } from "@/components/i18n/I18nProvider";
 import ImageCropModal from "@/components/ui/ImageCropModal";
 import { Camera } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-
-function safeErr(body: string): string {
-  try {
-    return JSON.parse(body).error ?? "Gagal mengunggah.";
-  } catch {
-    return "Gagal mengunggah.";
-  }
-}
 
 export default function ImageOverlayPicker({
   value,
@@ -26,6 +19,7 @@ export default function ImageOverlayPicker({
   className?: string;
   fit?: "cover" | "contain";
 }) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -42,11 +36,11 @@ export default function ImageOverlayPicker({
     xhr.onload = () => {
       setProgress(null);
       if (xhr.status === 201) onChange(JSON.parse(xhr.responseText).url);
-      else toast.error(safeErr(xhr.responseText));
+      else toast.error(t("usersettings.overlay.uploadFailed"));
     };
     xhr.onerror = () => {
       setProgress(null);
-      toast.error("Gagal mengunggah.");
+      toast.error(t("usersettings.overlay.uploadFailed"));
     };
     xhr.send(form);
   }
@@ -63,24 +57,28 @@ export default function ImageOverlayPicker({
     xhr.onload = () => {
       setProgress(null);
       if (xhr.status === 201) onChange(JSON.parse(xhr.responseText).url);
-      else toast.error(safeErr(xhr.responseText));
+      else toast.error(t("usersettings.overlay.uploadFailed"));
     };
     xhr.onerror = () => {
       setProgress(null);
-      toast.error("Gagal mengunggah.");
+      toast.error(t("usersettings.overlay.uploadFailed"));
     };
     xhr.send(form);
   }
 
   const busy = progress !== null;
   const rounded = shape === "circle" ? "rounded-full" : "rounded-2xl";
+  const ariaLabel =
+    shape === "circle"
+      ? t("usersettings.overlay.changeAvatar")
+      : t("usersettings.overlay.changeBanner");
 
   return (
     <button
       type="button"
       onClick={() => inputRef.current?.click()}
       disabled={busy}
-      aria-label={shape === "circle" ? "Ubah avatar" : "Ubah banner"}
+      aria-label={ariaLabel}
       className={`group relative block overflow-hidden ${rounded} ${className}`}
     >
       {value ? (
@@ -94,7 +92,9 @@ export default function ImageOverlayPicker({
       )}
       <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/45 text-white opacity-0 transition group-hover:opacity-100">
         <Camera className="h-5 w-5" />
-        {shape === "banner" && <span className="text-xs font-medium">Ubah</span>}
+        {shape === "banner" && (
+          <span className="text-xs font-medium">{t("usersettings.overlay.change")}</span>
+        )}
       </span>
       {busy && (
         <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-sm font-medium text-white">

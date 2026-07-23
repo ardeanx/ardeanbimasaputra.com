@@ -1,38 +1,44 @@
 "use client";
 
+import { useT } from "@/components/i18n/I18nProvider";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { saveNotifPrefsAction } from "@/app/(shell)/settings/actions";
 import type { NotifPrefs } from "@/lib/notification-prefs";
 
-const FIELDS: { key: keyof NotifPrefs; label: string; hint: string }[] = [
-  {
-    key: "comments",
-    label: "Komentar di konten saya",
-    hint: "Saat ada yang mengomentari konten Anda.",
-  },
-  {
-    key: "replies",
-    label: "Balasan",
-    hint: "Saat ada yang membalas komentar Anda.",
-  },
-  {
-    key: "follows",
-    label: "Pengikut baru",
-    hint: "Saat ada yang mulai mengikuti Anda.",
-  },
-  {
-    key: "newContent",
-    label: "Konten baru dari yang diikuti",
-    hint: "Saat kreator yang Anda ikuti menerbitkan konten.",
-  },
-];
-
 export default function NotifPrefsForm({ initial }: { initial: NotifPrefs }) {
+  const t = useT();
   const [value, setValue] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [pending, startTransition] = useTransition();
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
+
+  const fields: {
+    key: keyof NotifPrefs;
+    label: string;
+    hint: string;
+  }[] = [
+    {
+      key: "comments",
+      label: t("usersettings.notif.comments"),
+      hint: t("usersettings.notif.commentsHint"),
+    },
+    {
+      key: "replies",
+      label: t("usersettings.notif.replies"),
+      hint: t("usersettings.notif.repliesHint"),
+    },
+    {
+      key: "follows",
+      label: t("usersettings.notif.follows"),
+      hint: t("usersettings.notif.followsHint"),
+    },
+    {
+      key: "newContent",
+      label: t("usersettings.notif.newContent"),
+      hint: t("usersettings.notif.newContentHint"),
+    },
+  ];
 
   function toggle(key: keyof NotifPrefs) {
     setValue((s) => ({ ...s, [key]: !s[key] }));
@@ -45,19 +51,17 @@ export default function NotifPrefsForm({ initial }: { initial: NotifPrefs }) {
         toast.error(res.error);
       } else {
         setSaved(value);
-        toast.success("Preferensi notifikasi disimpan.");
+        toast.success(t("usersettings.notif.saved"));
       }
     });
   }
 
   return (
     <section className="rounded-xl border border-yt-outline bg-yt-raised p-5">
-      <h2 className="text-base font-semibold">Notifikasi</h2>
-      <p className="mt-1 text-sm text-yt-text2">
-        Pilih peristiwa yang ingin Anda terima notifikasinya.
-      </p>
+      <h2 className="text-base font-semibold">{t("usersettings.notif.title")}</h2>
+      <p className="mt-1 text-sm text-yt-text2">{t("usersettings.notif.desc")}</p>
       <div className="mt-4 divide-y divide-yt-outline">
-        {FIELDS.map((f) => (
+        {fields.map((f) => (
           <div key={f.key} className="flex items-center justify-between gap-4 py-3">
             <div className="min-w-0">
               <p className="text-sm font-medium">{f.label}</p>
@@ -89,7 +93,7 @@ export default function NotifPrefsForm({ initial }: { initial: NotifPrefs }) {
           disabled={!dirty || pending}
           className="h-10 rounded-full bg-yt-cta px-5 text-sm font-medium text-white disabled:opacity-50"
         >
-          {pending ? "Menyimpan..." : "Simpan"}
+          {pending ? t("usersettings.saving") : t("usersettings.save")}
         </button>
       </div>
     </section>

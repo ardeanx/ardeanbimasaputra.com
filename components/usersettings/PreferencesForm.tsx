@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/i18n/I18nProvider";
 import { useTheme } from "next-themes";
 import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
@@ -12,12 +13,6 @@ const LANGS = [
   { value: "id", label: "Bahasa Indonesia" },
   { value: "en", label: "English" },
 ];
-
-const THEMES = [
-  ["system", "Gunakan tema perangkat"],
-  ["light", "Tema terang"],
-  ["dark", "Tema gelap"],
-] as const;
 
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -35,6 +30,7 @@ export default function PreferencesForm({
   initialLang: string;
   vapidPublicKey?: string;
 }) {
+  const t = useT();
   const { theme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(
     noopSubscribe,
@@ -52,11 +48,17 @@ export default function PreferencesForm({
   const [push, setPush] = useState<"init" | "unsupported" | "off" | "on" | "busy">("init");
   const dirty = lang !== saved;
 
+  const themes: [string, string][] = [
+    ["system", t("usersettings.theme.system")],
+    ["light", t("usersettings.theme.light")],
+    ["dark", t("usersettings.theme.dark")],
+  ];
+
   useEffect(() => {
     if (!vapidPublicKey || !mounted) return;
     if (!pushSupported) {
-      const t = setTimeout(() => setPush("unsupported"), 0);
-      return () => clearTimeout(t);
+      const tm = setTimeout(() => setPush("unsupported"), 0);
+      return () => clearTimeout(tm);
     }
     navigator.serviceWorker
       .getRegistration()
@@ -70,7 +72,7 @@ export default function PreferencesForm({
     (async () => {
       const perm = await Notification.requestPermission();
       if (perm !== "granted") {
-        toast.error("Izin notifikasi ditolak oleh peramban.");
+        toast.error(t("usersettings.push.permissionDenied"));
         setPush("off");
         return;
       }
@@ -86,9 +88,9 @@ export default function PreferencesForm({
       });
       if (!res.ok) throw new Error("subscribe");
       setPush("on");
-      toast.success("Notifikasi push aktif di perangkat ini.");
+      toast.success(t("usersettings.push.enabled"));
     })().catch(() => {
-      toast.error("Gagal mengaktifkan notifikasi push.");
+      toast.error(t("usersettings.push.enableFailed"));
       setPush("off");
     });
   }
@@ -107,9 +109,9 @@ export default function PreferencesForm({
         await sub.unsubscribe();
       }
       setPush("off");
-      toast.success("Notifikasi push dimatikan.");
+      toast.success(t("usersettings.push.disabled"));
     })().catch(() => {
-      toast.error("Gagal mematikan notifikasi push.");
+      toast.error(t("usersettings.push.disableFailed"));
       setPush("on");
     });
   }
@@ -121,7 +123,7 @@ export default function PreferencesForm({
         toast.error(res.error);
       } else {
         setSaved(lang);
-        toast.success("Bahasa disimpan.");
+        toast.success(t("usersettings.lang.saved"));
       }
     });
   }
@@ -129,10 +131,15 @@ export default function PreferencesForm({
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-yt-outline bg-yt-raised p-5">
-        <h2 className="text-base font-semibold">Bahasa</h2>
-        <p className="mt-1 text-sm text-yt-text2">Bahasa tampilan untuk akun ini.</p>
+        <h2 className="text-base font-semibold">{t("usersettings.lang.title")}</h2>
+        <p className="mt-1 text-sm text-yt-text2">{t("usersettings.lang.desc")}</p>
         <div className="mt-3 max-w-xs">
-          <Select value={lang} options={LANGS} onChange={setLang} ariaLabel="Bahasa" />
+          <Select
+            value={lang}
+            options={LANGS}
+            onChange={setLang}
+            ariaLabel={t("usersettings.lang.aria")}
+          />
         </div>
         <div className="mt-4 flex justify-end">
           <button
@@ -141,16 +148,16 @@ export default function PreferencesForm({
             disabled={!dirty || pending}
             className="h-10 rounded-full bg-yt-cta px-5 text-sm font-medium text-white disabled:opacity-50"
           >
-            {pending ? "Menyimpan..." : "Simpan"}
+            {pending ? t("usersettings.saving") : t("usersettings.save")}
           </button>
         </div>
       </section>
 
       <section className="rounded-xl border border-yt-outline bg-yt-raised p-5">
-        <h2 className="text-base font-semibold">Tampilan</h2>
-        <p className="mt-1 text-sm text-yt-text2">Perubahan tema langsung diterapkan.</p>
-        <div role="radiogroup" aria-label="Tema tampilan" className="mt-3 space-y-1">
-          {THEMES.map(([value, label]) => (
+        <h2 className="text-base font-semibold">{t("usersettings.theme.title")}</h2>
+        <p className="mt-1 text-sm text-yt-text2">{t("usersettings.theme.desc")}</p>
+        <div role="radiogroup" aria-label={t("usersettings.theme.aria")} className="mt-3 space-y-1">
+          {themes.map(([value, label]) => (
             <button
               key={value}
               type="button"
@@ -168,13 +175,11 @@ export default function PreferencesForm({
 
       {vapidPublicKey && (
         <section className="rounded-xl border border-yt-outline bg-yt-raised p-5">
-          <h2 className="text-base font-semibold">Notifikasi Push</h2>
-          <p className="mt-1 text-sm text-yt-text2">
-            Terima pemberitahuan di perangkat ini saat ada konten baru.
-          </p>
+          <h2 className="text-base font-semibold">{t("usersettings.push.title")}</h2>
+          <p className="mt-1 text-sm text-yt-text2">{t("usersettings.push.desc")}</p>
           <div className="mt-4">
             {push === "unsupported" ? (
-              <p className="text-sm text-yt-text2">Peramban ini tidak mendukung notifikasi push.</p>
+              <p className="text-sm text-yt-text2">{t("usersettings.push.unsupported")}</p>
             ) : (
               <button
                 type="button"
@@ -184,7 +189,11 @@ export default function PreferencesForm({
                   push === "on" ? "bg-yt-chip hover:bg-yt-chip-hover" : "bg-yt-cta text-white"
                 }`}
               >
-                {push === "busy" ? "Memproses..." : push === "on" ? "Nonaktifkan" : "Aktifkan"}
+                {push === "busy"
+                  ? t("usersettings.processing")
+                  : push === "on"
+                    ? t("usersettings.push.disable")
+                    : t("usersettings.push.enable")}
               </button>
             )}
           </div>

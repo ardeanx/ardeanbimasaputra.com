@@ -11,12 +11,11 @@ import {
 } from "@/lib/community";
 import { markNotificationsRead, recentNotifications, unreadCount } from "@/lib/notifications";
 import { actorOf, getSession } from "@/lib/session";
-
-const NO_SESSION = { error: "Silakan masuk terlebih dahulu." } as const;
+import { getT } from "@/lib/i18n";
 
 export async function addCommentAction(postId: string, body: string, parentId?: string) {
   const session = await getSession();
-  if (!session) return NO_SESSION;
+  if (!session) return { error: (await getT())("msg.sessionRequired") };
   const res = await addComment(actorOf(session.user), postId, body, parentId);
   if ("id" in res) revalidatePath("/watch");
   return res;
@@ -24,7 +23,7 @@ export async function addCommentAction(postId: string, body: string, parentId?: 
 
 export async function deleteCommentAction(id: string) {
   const session = await getSession();
-  if (!session) return NO_SESSION;
+  if (!session) return { error: (await getT())("msg.sessionRequired") };
   const res = await deleteComment(actorOf(session.user), id);
   if ("ok" in res) revalidatePath("/watch");
   return res;
@@ -32,25 +31,25 @@ export async function deleteCommentAction(id: string) {
 
 export async function toggleCommentLikeAction(id: string) {
   const session = await getSession();
-  if (!session) return NO_SESSION;
+  if (!session) return { error: (await getT())("msg.sessionRequired") };
   return toggleCommentLike(actorOf(session.user), id);
 }
 
 export async function toggleReactionAction(postId: string, value: 1 | -1) {
   const session = await getSession();
-  if (!session) return NO_SESSION;
+  if (!session) return { error: (await getT())("msg.sessionRequired") };
   return toggleReaction(actorOf(session.user), postId, value);
 }
 
 export async function toggleFollowAction(targetUserId: string) {
   const session = await getSession();
-  if (!session) return NO_SESSION;
+  if (!session) return { error: (await getT())("msg.sessionRequired") };
   return toggleFollow(actorOf(session.user), targetUserId);
 }
 
 export async function toggleBookmarkAction(postId: string) {
   const session = await getSession();
-  if (!session) return NO_SESSION;
+  if (!session) return { error: (await getT())("msg.sessionRequired") };
   return toggleBookmark(actorOf(session.user), postId);
 }
 

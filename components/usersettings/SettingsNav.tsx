@@ -1,25 +1,26 @@
 "use client";
 
+import { useT } from "@/components/i18n/I18nProvider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const ITEMS = [
-  { href: "/settings/profile", label: "Profil" },
-  { href: "/settings/account", label: "Akun" },
-  { href: "/settings/security", label: "Keamanan" },
-  { href: "/settings/notifications", label: "Notifikasi" },
-  { href: "/settings/preferences", label: "Preferensi" },
-  { href: "/settings/billing", label: "Pembelian" },
-];
-
 export default function SettingsNav() {
+  const t = useT();
   const pathname = usePathname();
+  const items = [
+    { href: "/settings/profile", label: t("usersettings.nav.profile") },
+    { href: "/settings/account", label: t("usersettings.nav.account") },
+    { href: "/settings/security", label: t("usersettings.nav.security") },
+    { href: "/settings/notifications", label: t("usersettings.nav.notifications") },
+    { href: "/settings/preferences", label: t("usersettings.nav.preferences") },
+    { href: "/settings/billing", label: t("usersettings.nav.billing") },
+  ];
   return (
     <nav
-      aria-label="Kategori setelan"
+      aria-label={t("usersettings.nav.aria")}
       className="flex shrink-0 gap-1 overflow-x-auto md:sticky md:top-20 md:block md:w-56 md:space-y-0.5 md:self-start"
     >
-      {ITEMS.map((item) => (
+      {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}

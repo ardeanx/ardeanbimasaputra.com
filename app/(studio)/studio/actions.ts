@@ -7,7 +7,8 @@ import { post } from "@/db/schema";
 import { db } from "@/lib/db";
 import { deletePost, moderatePost, savePost } from "@/lib/posts";
 import { revalidateContent } from "@/lib/revalidate";
-import { actorOf, getSession, isAdminUser } from "@/lib/session";
+import { getSession, isAdminUser } from "@/lib/session";
+import { getT } from "@/lib/i18n";
 import { postMeta, type PostMeta } from "@/lib/validators";
 
 type SaveState =
@@ -23,7 +24,7 @@ function parseBody(raw: string): unknown {
 
 export async function savePostAction(_prev: SaveState, formData: FormData): Promise<SaveState> {
   const session = await getSession();
-  if (!session) return { error: "Sesi berakhir. Silakan masuk lagi." };
+  if (!session) return { error: (await getT())("msg.sessionExpired") };
 
   const categoryRaw = formData.get("categoryId");
   const thumbRaw = String(formData.get("thumbnail") ?? "").trim();
@@ -80,11 +81,11 @@ export async function setViewCountAction(
   count: number,
 ): Promise<{ ok: true } | { error: string }> {
   const session = await getSession();
-  if (!session) return { error: "Sesi berakhir. Silakan masuk lagi." };
-  if (!isAdminUser(session.user)) return { error: "Akses ditolak." };
+  if (!session) return { error: (await getT())("msg.sessionExpired") };
+  if (!isAdminUser(session.user)) return { error: (await getT())("msg.accessDenied") };
 
   const value = Math.max(0, Math.trunc(Number(count)));
-  if (!Number.isFinite(value)) return { error: "Nilai tidak valid." };
+  if (!Number.isFinite(value)) return { error: (await getT())("msg.invalidValue") };
 
   await db.update(post).set({ viewCount: value }).where(eq(post.id, postId));
   revalidateContent();
