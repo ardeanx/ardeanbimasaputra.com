@@ -106,6 +106,7 @@ const SeoSection = forwardRef<SaveHandle, { seo: Seo }>(function SeoSection({ se
           value={s.ogImage}
           onChange={(v) => patch("ogImage", v)}
           hint={t("settings.seo.ogImageHint")}
+          crop={false}
         />
         <Row label={t("settings.seo.schema")} hint={t("settings.seo.schemaHint")}>
           <Select
@@ -195,6 +196,7 @@ const SeoSection = forwardRef<SaveHandle, { seo: Seo }>(function SeoSection({ se
               label={t("settings.seo.entityLogo")}
               value={s.localSeo.logo}
               onChange={(v) => patchLocal("logo", v)}
+              crop={false}
             />
           </div>
         </div>

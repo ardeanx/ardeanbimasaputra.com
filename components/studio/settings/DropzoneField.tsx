@@ -21,6 +21,7 @@ export default function DropzoneField({
   hint,
   fit = "contain",
   aspectRatio,
+  crop = true,
   skipCropFor,
 }: {
   label: string;
@@ -29,6 +30,7 @@ export default function DropzoneField({
   hint?: string;
   fit?: "contain" | "cover";
   aspectRatio?: number;
+  crop?: boolean;
   skipCropFor?: RegExp;
 }) {
   const t = useT();
@@ -98,7 +100,7 @@ export default function DropzoneField({
   function pick(files: FileList | null) {
     const f = files?.[0];
     if (!f) return;
-    if (f.type.startsWith("image/") && !skipCropFor?.test(f.type)) {
+    if (crop && f.type.startsWith("image/") && !skipCropFor?.test(f.type)) {
       setPendingFile(f);
       return;
     }
@@ -172,17 +174,19 @@ export default function DropzoneField({
         )}
         {value && progress === null && (
           <div className="absolute top-1.5 right-1.5 flex gap-1">
-            <button
-              type="button"
-              aria-label={t("settings.recropLabel")}
-              onClick={(e) => {
-                e.stopPropagation();
-                recropExisting();
-              }}
-              className="grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
-            >
-              <Crop size={13} />
-            </button>
+            {crop && (
+              <button
+                type="button"
+                aria-label={t("settings.recropLabel")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  recropExisting();
+                }}
+                className="grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+              >
+                <Crop size={13} />
+              </button>
+            )}
             <button
               type="button"
               aria-label={t("settings.removeLabel", { label })}
@@ -196,7 +200,7 @@ export default function DropzoneField({
             </button>
           </div>
         )}
-        {value && progress === null && (
+        {crop && value && progress === null && (
           <span className="pointer-events-none absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-medium text-white opacity-90">
             <Pencil size={10} />
             {t("settings.editHint")}
